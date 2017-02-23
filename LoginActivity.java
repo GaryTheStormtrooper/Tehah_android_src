@@ -1,9 +1,11 @@
-package com.github.nkzawa.socketio.androidchat;
+package com.github.nkzawa.socketio.tehahChat;
 
 import android.app.Activity;
 import android.content.Intent;
 import android.location.Location;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
+import android.support.v4.app.ActivityCompat;
 import android.text.TextUtils;
 import android.view.KeyEvent;
 import android.view.View;
@@ -19,19 +21,21 @@ import org.json.JSONObject;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.common.api.GoogleApiClient.ConnectionCallbacks;
 import com.google.android.gms.common.api.GoogleApiClient.OnConnectionFailedListener;
-import com.google.android.gms.location.LocationListener;
-import com.google.android.gms.location.LocationRequest;
-import com.google.android.gms.location.LocationServices;
 import android.content.pm.PackageManager;
 import android.support.v4.content.ContextCompat;
 import android.widget.Toast;
+import android.widget.LinearLayout;
+import android.widget.LinearLayout.LayoutParams;
+import java.util.Random;
 
 /**
  * A login screen that offers login via username.
  */
-public class LoginActivity extends Activity {
+public class LoginActivity extends Activity implements
+        ConnectionCallbacks, OnConnectionFailedListener {
 
     private EditText mUsernameView;
 
@@ -47,18 +51,17 @@ public class LoginActivity extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
 
-
         if (mGoogleApiClient == null) {
             mGoogleApiClient = new GoogleApiClient.Builder(this)
-                    //.addConnectionCallbacks(this)
-                    //.addOnConnectionFailedListener(this)
+                    .addConnectionCallbacks(this)
+                    .addOnConnectionFailedListener(this)
                     .addApi(LocationServices.API)
                     .build();
         }
 
-
         ChatApplication app = (ChatApplication) getApplication();
         mSocket = app.getSocket();
+
 
         // Set up the login form.
         mUsernameView = (EditText) findViewById(R.id.username_input);
@@ -73,7 +76,7 @@ public class LoginActivity extends Activity {
             }
         });
 
-        Button signInButton = (Button) findViewById(R.id.sign_in_button);
+        Button signInButton = (Button) findViewById(R.id.make_room_button);
         signInButton.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -82,35 +85,19 @@ public class LoginActivity extends Activity {
         });
 
 
+        Random randomGenerator0 = new Random();
+        int randomInt0 = randomGenerator0.nextInt(20);
+        for (int i = 0; i < randomInt0; i++) {
+            Random randomGenerator = new Random();
+            int randomInt = randomGenerator.nextInt(10);
+            Button myButton = new Button(this);
+            myButton.setText("Rhode Island-" + randomInt);
 
-        mGoogleApiClient.connect();
+            LinearLayout ll = (LinearLayout) findViewById(R.id.room_box);
+            LayoutParams lp = new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT);
+            ll.addView(myButton, lp);
 
-        String mLatitudeText = "";
-        String mLongitudeText = "";
-
-        if ( ContextCompat.checkSelfPermission(
-                this, android.Manifest.permission.ACCESS_COARSE_LOCATION ) != PackageManager.PERMISSION_GRANTED ) {
-                mLastLocation = LocationServices.FusedLocationApi.getLastLocation(
-                    mGoogleApiClient);
-
-            //flag 0
-            Toast.makeText(this, "permission test @ LoginActivty", Toast.LENGTH_LONG).show();
         }
-        if (mLastLocation != null) {
-            mLatitudeText = String.valueOf(mLastLocation.getLatitude());
-            mLongitudeText =String.valueOf(mLastLocation.getLongitude());
-            Toast.makeText(this, mLatitudeText, Toast.LENGTH_LONG).show();
-        }
-
-
-
-
-
-
-
-
-
-
 
         mSocket.on("login", onLogin);
     }
@@ -169,32 +156,75 @@ public class LoginActivity extends Activity {
         }
     };
 
-
+    @Override
     protected void onStart() {
-        mGoogleApiClient.connect();
+
+        //flag 0
+        //Toast.makeText(this, "login.onStart start", Toast.LENGTH_SHORT).show();
+
         super.onStart();
+        if (mGoogleApiClient != null) {
+            mGoogleApiClient.connect();
+        }
     }
 
+    @Override
     protected void onStop() {
         mGoogleApiClient.disconnect();
         super.onStop();
     }
 
+
     //@Override
     public void onConnected(Bundle connectionHint) {
 
-        String mLatitudeText = "";
-        String mLongitudeText = "";
+
+        String userLatitudeText = "";
+        String userLongitudeText = "";
+        Location userLastLocation;
+
+        //flag 1
+        //Toast.makeText(this, "onConnected start", Toast.LENGTH_LONG).show();
 
         if ( ContextCompat.checkSelfPermission( this, android.Manifest.permission.ACCESS_COARSE_LOCATION ) != PackageManager.PERMISSION_GRANTED ) {
-            mLastLocation = LocationServices.FusedLocationApi.getLastLocation(
+            ActivityCompat.requestPermissions(this, new String[]{android.Manifest.permission.ACCESS_COARSE_LOCATION}, 1);
+            //flag 2a
+            Toast.makeText(this, "Google Play permission not granted", Toast.LENGTH_LONG).show();
+            userLastLocation = LocationServices.FusedLocationApi.getLastLocation(
                     mGoogleApiClient);
         }
-        if (mLastLocation != null) {
-            mLatitudeText = String.valueOf(mLastLocation.getLatitude());
-            mLongitudeText =String.valueOf(mLastLocation.getLongitude());
-            Toast.makeText(this, mLatitudeText, Toast.LENGTH_LONG).show();
+        else
+        {
+            //flag 2
+            //Toast.makeText(this, "access permission granted", Toast.LENGTH_LONG).show();
+            userLastLocation = LocationServices.FusedLocationApi.getLastLocation(
+                    mGoogleApiClient);
+
+            //flag 3
+            //Toast.makeText(this, "my last location object: " + userLastLocation, Toast.LENGTH_LONG).show();
+
         }
+        if (userLastLocation != null) {
+            userLatitudeText = String.valueOf(userLastLocation.getLatitude());
+            userLongitudeText = String.valueOf(userLastLocation.getLongitude());
+            //Toast.makeText(this, "Your coordinates: " + userLatitudeText + ", " + userLongitudeText, Toast.LENGTH_LONG).show();
+
+            TextView tv = (TextView) findViewById(R.id.location_teller);
+            tv.setText("Your coordinates: " + userLatitudeText + ", " + userLongitudeText);
+        }
+    }
+
+    @Override
+    public void onConnectionSuspended(int i) {
+        Toast.makeText(this, "onConnectionSuspended", Toast.LENGTH_LONG).show();
+    }
+
+    @Override
+    //Connection Debugger
+    //Displays error codes
+    public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
+        Toast.makeText(this, "onConnectionFailed, error code: " + connectionResult.getErrorCode(), Toast.LENGTH_SHORT).show();
+        // Toast.makeText(this, "onConnectionFailed " + connectionResult.getErrorMessage(), Toast.LENGTH_SHORT).show();
     }
 
 }

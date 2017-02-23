@@ -1,4 +1,4 @@
-package com.github.nkzawa.socketio.androidchat;
+package com.github.nkzawa.socketio.tehahChat;
 
 import android.app.Activity;
 import android.content.Intent;
@@ -31,7 +31,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 
-
 /**
  * A chat fragment containing messages view and input form.
  */
@@ -53,7 +52,6 @@ public class MainFragment extends Fragment {
     private Boolean isConnected = true;
 
 
-
     public MainFragment() {
         super();
     }
@@ -66,11 +64,6 @@ public class MainFragment extends Fragment {
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
-
-
-
-
-
 
         super.onCreate(savedInstanceState);
 
