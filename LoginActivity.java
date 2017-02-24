@@ -24,6 +24,8 @@ import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.common.api.GoogleApiClient.ConnectionCallbacks;
 import com.google.android.gms.common.api.GoogleApiClient.OnConnectionFailedListener;
+import com.google.android.gms.vision.text.Text;
+
 import android.content.pm.PackageManager;
 import android.support.v4.content.ContextCompat;
 import android.widget.Toast;
@@ -84,6 +86,11 @@ public class LoginActivity extends Activity implements
             }
         });
 
+        // Insert suggested nickname
+        NicknameSuggester ns = new NicknameSuggester();
+        TextView nicknameText = (TextView) findViewById(R.id.username_input);
+        nicknameText.setText(ns.suggestName());
+        nicknameText.setSelectAllOnFocus(true);
 
         Random randomGenerator0 = new Random();
         int randomInt0 = randomGenerator0.nextInt(20);

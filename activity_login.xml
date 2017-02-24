@@ -22,6 +22,14 @@
             android:layout_height="match_parent"
             android:src="@drawable/tehah"/>
 
+        <TextView
+            android:id="@+id/username_prompt"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="30dp"
+            android:hint="@string/username_prompt_text"
+            android:maxLines="1"/>
+
         <EditText
                 android:id="@+id/username_input"
                 android:layout_width="match_parent"
