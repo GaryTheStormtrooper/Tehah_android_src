@@ -30,5 +30,4 @@ public class NicknameSuggester {
             return "AlphaOmega";
         }
     }
-
 }

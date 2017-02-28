@@ -20,7 +20,7 @@
         <ImageView
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:src="@drawable/tehah"/>
+            android:src="@drawable/ic_launcher"/>
 
         <TextView
             android:id="@+id/username_prompt"
@@ -91,27 +91,11 @@
             android:layout_height="200dip"
             android:layout_width="match_parent">
             <LinearLayout
-            android:id="@+id/room_box"
-            android:layout_height="140dip"
-            android:layout_width="match_parent"
-            android:orientation="vertical">
-
-            <!--android:layout_width="0dip"
-            android:layout_height="fill_parent"
-            android:layout_weight=".7">
-            -->
-
-            <Button
-                android:id="@+id/room_button"
-                style="?android:textAppearanceSmall"
+                android:id="@+id/room_box"
+                android:layout_height="200dip"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                android:text="@string/action_room1"
-                android:textStyle="bold"/>
-
+                android:orientation="vertical">
             </LinearLayout>
-
         </ScrollView>
 
     </LinearLayout>

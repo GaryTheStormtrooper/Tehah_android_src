@@ -13,6 +13,7 @@ import android.view.View.OnClickListener;
 import android.view.inputmethod.EditorInfo;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ScrollView;
 import android.widget.TextView;
 import io.socket.client.Socket;
 import io.socket.emitter.Emitter;
@@ -31,6 +32,7 @@ import android.support.v4.content.ContextCompat;
 import android.widget.Toast;
 import android.widget.LinearLayout;
 import android.widget.LinearLayout.LayoutParams;
+import android.view.Gravity;
 import java.util.Random;
 
 /**
@@ -86,7 +88,8 @@ public class LoginActivity extends Activity implements
             }
         });
 
-        // Insert suggested nickname
+        /////// Insert suggested nickname ///////////
+        // uses NicknameSuggester
         NicknameSuggester ns = new NicknameSuggester();
         TextView nicknameText = (TextView) findViewById(R.id.username_input);
         nicknameText.setText(ns.suggestName());
@@ -98,11 +101,29 @@ public class LoginActivity extends Activity implements
             Random randomGenerator = new Random();
             int randomInt = randomGenerator.nextInt(10);
             Button myButton = new Button(this);
-            myButton.setText("Rhode Island-" + randomInt);
+            myButton.setText("Pomona-" + randomInt);
 
             LinearLayout ll = (LinearLayout) findViewById(R.id.room_box);
             LayoutParams lp = new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT);
+            myButton.setOnClickListener(new OnClickListener() {
+                                    @Override
+                                    public void onClick(View view) {
+                                        attemptLogin();
+                                    }});
             ll.addView(myButton, lp);
+        }
+
+        //handle if there are no rooms found
+        if (randomInt0 == 0)
+        {
+            LinearLayout ll = (LinearLayout) findViewById(R.id.room_box);
+            LayoutParams lp = new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT);
+            TextView padding = new TextView(this);
+            TextView tv = new TextView(this);
+            tv.setText("( No rooms are near you...Start one! )");
+            tv.setGravity(Gravity.CENTER);
+            ll.addView(padding);
+            ll.addView(tv);
 
         }
 
@@ -130,6 +151,7 @@ public class LoginActivity extends Activity implements
 
         // Check for a valid username.
         if (TextUtils.isEmpty(username)) {
+
             // There was an error; don't attempt login and focus the first
             // form field with an error.
             mUsernameView.setError(getString(R.string.error_field_required));
@@ -138,7 +160,7 @@ public class LoginActivity extends Activity implements
         }
 
         mUsername = username;
-
+        Toast.makeText(this, "attemptLogin() " + mUsername, Toast.LENGTH_SHORT).show();
         // perform the user login attempt.
         mSocket.emit("add user", username);
     }
@@ -234,7 +256,4 @@ public class LoginActivity extends Activity implements
         // Toast.makeText(this, "onConnectionFailed " + connectionResult.getErrorMessage(), Toast.LENGTH_SHORT).show();
     }
 
-}
-
-
-
+ }

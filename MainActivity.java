@@ -17,21 +17,21 @@ import android.widget.Toast;
 
 public class MainActivity extends ActionBarActivity  {
 
-    private static GoogleApiClient mGoogleApiClient;
-    private static Location userLastLocation;
-    private static String userLatitudeText;
-    private static String userLongitudeText;
+    //private static GoogleApiClient mGoogleApiClient;
+    //private static Location userLastLocation;
+    //private static String userLatitudeText;
+    //private static String userLongitudeText;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
 
-        if (mGoogleApiClient == null) {
+       /* if (mGoogleApiClient == null) {
             mGoogleApiClient = new GoogleApiClient.Builder(this)
                     //.addConnectionCallbacks(this)
                     //.addOnConnectionFailedListener(this)
                     .addApi(LocationServices.API)
                     .build();
-        }
+        }*/
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
     }
@@ -50,12 +50,13 @@ public class MainActivity extends ActionBarActivity  {
     }
 
     */
-
+/*
     @Override
     protected void onStop() {
         mGoogleApiClient.disconnect();
         super.onStop();
     }
+    */
 /*
     @Override
     public void onConnected(Bundle connectionHint) {
