@@ -17,8 +17,11 @@ import android.widget.ScrollView;
 import android.widget.TextView;
 import io.socket.client.Socket;
 import io.socket.emitter.Emitter;
+
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+import java.util.UUID;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
@@ -49,6 +52,11 @@ public class LoginActivity extends Activity implements
 
     public static GoogleApiClient mGoogleApiClient;
     public static Location mLastLocation;
+    String userLatitudeText;
+    String userLongitudeText;
+
+    String uniqueID = "123";//UUID.randomUUID().toString();
+    //String iid = InstanceID.getInstance(getApplicationContext()).getId();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -84,15 +92,29 @@ public class LoginActivity extends Activity implements
         signInButton.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View view) {
-                attemptLogin();
+                createRoom();
+            }
+        });
+
+        Button refresher = (Button) findViewById(R.id.roomRefresh_button);
+        refresher.setOnClickListener(new OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                refresher();
             }
         });
 
         /////// Insert suggested nickname ///////////
         // uses NicknameSuggester
         NicknameSuggester ns = new NicknameSuggester();
+        TextView roomNameText = (TextView) findViewById(R.id.roomname_input);
         TextView nicknameText = (TextView) findViewById(R.id.username_input);
-        nicknameText.setText(ns.suggestName());
+        String suggestedName = ns.suggestName();
+
+        roomNameText.setText("Room " + suggestedName);
+        nicknameText.setText(suggestedName);
+
+        roomNameText.setSelectAllOnFocus(true);
         nicknameText.setSelectAllOnFocus(true);
 
         Random randomGenerator0 = new Random();
@@ -128,6 +150,9 @@ public class LoginActivity extends Activity implements
         }
 
         mSocket.on("login", onLogin);
+        mSocket.on("join", onJoin);
+
+        mSocket.on("display rooms", updateRoomList);
     }
 
     @Override
@@ -160,9 +185,59 @@ public class LoginActivity extends Activity implements
         }
 
         mUsername = username;
-        Toast.makeText(this, "attemptLogin() " + mUsername, Toast.LENGTH_SHORT).show();
+        //Toast.makeText(this, "attemptLogin() " + mUsername, Toast.LENGTH_SHORT).show();
         // perform the user login attempt.
         mSocket.emit("add user", username);
+    }
+
+    private void createRoom() {
+        // Reset errors.
+        mUsernameView.setError(null);
+
+        // Store values at the time of the login attempt.
+        String username = mUsernameView.getText().toString().trim();
+
+        // Check for a valid username.
+        if (TextUtils.isEmpty(username)) {
+
+            // There was an error; don't attempt login and focus the first
+            // form field with an error.
+            mUsernameView.setError(getString(R.string.error_field_required));
+            mUsernameView.requestFocus();
+            return;
+        }
+
+        mUsername = username;
+
+
+
+        JSONObject chatRoomInfo = new JSONObject();
+        try {
+            chatRoomInfo.put("roomName", (EditText) findViewById(R.id.roomname_input));
+            chatRoomInfo.put("latitude", userLatitudeText);
+            chatRoomInfo.put("longitude", userLongitudeText);
+            chatRoomInfo.put("uniqueID", uniqueID);
+
+        } catch (JSONException e ){}
+
+        Toast.makeText(this, "createRoom() " + mUsername + " " + uniqueID, Toast.LENGTH_SHORT).show();
+
+        // perform the user login attempt.
+        mSocket.emit("create room", chatRoomInfo);
+    }
+
+    private void refresher(){
+        Toast.makeText(this, "refresher() ", Toast.LENGTH_SHORT).show();
+
+        JSONObject refreshInfo = new JSONObject();
+        try {
+            refreshInfo.put("nameID", uniqueID);
+            refreshInfo.put("latitude", userLatitudeText);
+            refreshInfo.put("longitude", userLongitudeText);
+
+        } catch (JSONException e ){}
+
+        mSocket.emit("display rooms", refreshInfo);
     }
 
     private Emitter.Listener onLogin = new Emitter.Listener() {
@@ -182,6 +257,48 @@ public class LoginActivity extends Activity implements
             intent.putExtra("numUsers", numUsers);
             setResult(RESULT_OK, intent);
             finish();
+        }
+    };
+
+    private Emitter.Listener onJoin = new Emitter.Listener() {
+        @Override
+        public void call(Object... args) {
+            JSONObject data = (JSONObject) args[0];
+
+            int numUsers;
+            //String
+            try {
+                numUsers = data.getInt("numUsers");
+            } catch (JSONException e) {
+                return;
+            }
+
+            Intent intent = new Intent();
+            intent.putExtra("username", mUsername);
+            intent.putExtra("numUsers", numUsers);
+            setResult(RESULT_OK, intent);
+            finish();
+        }
+    };
+
+    private Emitter.Listener updateRoomList = new Emitter.Listener() {
+        @Override
+        public void call(Object... args) {
+            JSONObject data = (JSONObject) args[0];
+
+/*
+            JSONArray roomArrays;
+            try {
+                roomArrays = data.getJSONArray("roomList");
+            } catch (JSONException e) {
+                return;
+            }
+
+            Intent intent = new Intent();
+            intent.putExtra("username", mUsername);
+            intent.putExtra("numUsers", numUsers);
+            setResult(RESULT_OK, intent);
+            finish();*/
         }
     };
 
@@ -208,8 +325,8 @@ public class LoginActivity extends Activity implements
     public void onConnected(Bundle connectionHint) {
 
 
-        String userLatitudeText = "";
-        String userLongitudeText = "";
+        userLatitudeText = "";
+        userLongitudeText = "";
         Location userLastLocation;
 
         //flag 1
@@ -243,6 +360,10 @@ public class LoginActivity extends Activity implements
         }
     }
 
+
+
+    /////// Debuggers
+    //
     @Override
     public void onConnectionSuspended(int i) {
         Toast.makeText(this, "onConnectionSuspended", Toast.LENGTH_LONG).show();

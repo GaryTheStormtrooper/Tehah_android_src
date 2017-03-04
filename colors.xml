@@ -13,5 +13,7 @@
     <color name="username9">#3824aa</color>
     <color name="username10">#a700ff</color>
     <color name="username11">#d300e7</color>
-
+    <color name="titleBar">#8A9B0F</color>
+    <color name="white">#fff</color>
+    <color name="black">#000</color>
 </resources>

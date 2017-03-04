@@ -80,6 +80,7 @@ public class MainFragment extends Fragment {
         mSocket.on("user left", onUserLeft);
         mSocket.on("typing", onTyping);
         mSocket.on("stop typing", onStopTyping);
+       // mSocket.on("create room", createRoom);
         mSocket.connect();
 
         startSignIn();
@@ -106,6 +107,7 @@ public class MainFragment extends Fragment {
         mSocket.off("user left", onUserLeft);
         mSocket.off("typing", onTyping);
         mSocket.off("stop typing", onStopTyping);
+       // mSocket.off("create room", createRoom);
     }
 
     @Override
@@ -430,5 +432,8 @@ public class MainFragment extends Fragment {
             mSocket.emit("stop typing");
         }
     };
+
+
+
 }
 
