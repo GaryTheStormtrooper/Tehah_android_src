@@ -80,10 +80,10 @@ public class MainFragment extends Fragment {
         mSocket.on("user left", onUserLeft);
         mSocket.on("typing", onTyping);
         mSocket.on("stop typing", onStopTyping);
-       // mSocket.on("create room", createRoom);
+
         mSocket.connect();
 
-        startSignIn();
+        startSignIn();              //starts Login activity
     }
 
     @Override
@@ -270,6 +270,7 @@ public class MainFragment extends Fragment {
         mMessagesView.scrollToPosition(mAdapter.getItemCount() - 1);
     }
 
+    //on app creation
     private Emitter.Listener onConnect = new Emitter.Listener() {
         @Override
         public void call(Object... args) {

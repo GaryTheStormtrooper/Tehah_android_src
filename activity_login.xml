@@ -7,6 +7,7 @@
         android:paddingLeft="@dimen/activity_horizontal_margin"
         android:paddingRight="@dimen/activity_horizontal_margin"
         android:paddingTop="@dimen/activity_vertical_margin"
+        android:background="@drawable/gradient"
         tools:context="com.github.nkzawa.socketio.tehahChat.LoginActivity">
 
     <LinearLayout
@@ -78,6 +79,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
             android:text="@string/action_make_room"
+            android:clickable="false"
             android:textStyle="bold"/>
         <!--Button
                 android:id="@+id/sign_in_button"

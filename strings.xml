@@ -13,8 +13,8 @@
     <!-- messages -->
     <string name="message_welcome">Tehah - Stay Connect, Stupid Simple</string>
     <plurals name="message_participants">
-        <item quantity="one">there\'s %d participant</item>
-        <item quantity="other">there are %d participants</item>
+        <item quantity="one">There\'s %d participant</item>
+        <item quantity="other">There are %d participants</item>
     </plurals>
     <string name="message_user_joined">%s joined</string>
     <string name="message_user_left">%s left</string>

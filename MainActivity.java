@@ -9,9 +9,12 @@ import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.ActionBarActivity;
 
+import java.util.UUID;
+
 
 public class MainActivity extends ActionBarActivity  {
 
+    public static String uniqueID = UUID.randomUUID().toString().substring(0,7);
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {

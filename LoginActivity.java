@@ -1,6 +1,7 @@
 package com.github.nkzawa.socketio.tehahChat;
 
 import android.app.Activity;
+import android.content.Context;
 import android.content.Intent;
 import android.location.Location;
 import android.os.Bundle;
@@ -21,14 +22,13 @@ import io.socket.emitter.Emitter;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-import java.util.UUID;
+import android.content.SharedPreferences;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.common.api.GoogleApiClient.ConnectionCallbacks;
 import com.google.android.gms.common.api.GoogleApiClient.OnConnectionFailedListener;
-import com.google.android.gms.vision.text.Text;
 
 import android.content.pm.PackageManager;
 import android.support.v4.content.ContextCompat;
@@ -52,11 +52,10 @@ public class LoginActivity extends Activity implements
 
     public static GoogleApiClient mGoogleApiClient;
     public static Location mLastLocation;
-    String userLatitudeText;
-    String userLongitudeText;
+    public String userLatitudeText;
+    public String userLongitudeText;
 
-    String uniqueID = "123";//UUID.randomUUID().toString();
-    //String iid = InstanceID.getInstance(getApplicationContext()).getId();
+    String uniqueID = MainActivity.uniqueID;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -116,9 +115,11 @@ public class LoginActivity extends Activity implements
 
         roomNameText.setSelectAllOnFocus(true);
         nicknameText.setSelectAllOnFocus(true);
+        nicknameText.requestFocus();
 
         Random randomGenerator0 = new Random();
         int randomInt0 = randomGenerator0.nextInt(20);
+        randomInt0 = 1;
         for (int i = 0; i < randomInt0; i++) {
             Random randomGenerator = new Random();
             int randomInt = randomGenerator.nextInt(10);
@@ -142,7 +143,7 @@ public class LoginActivity extends Activity implements
             LayoutParams lp = new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT);
             TextView padding = new TextView(this);
             TextView tv = new TextView(this);
-            tv.setText("( No rooms are near you...Start one! )");
+            tv.setText("( No rooms are near you...Search again! )");
             tv.setGravity(Gravity.CENTER);
             ll.addView(padding);
             ll.addView(tv);
@@ -152,7 +153,18 @@ public class LoginActivity extends Activity implements
         mSocket.on("login", onLogin);
         mSocket.on("join", onJoin);
 
-        mSocket.on("display rooms", updateRoomList);
+        //mSocket.on("display rooms", updateRoomList);
+        mSocket.on("get local", updateLocalRoomList);
+
+
+        // device id maker
+        SharedPreferences sharedPref = this.getSharedPreferences("com.Tehah.sharedPref", Context.MODE_PRIVATE);
+        if (sharedPref.getString("userID", "").length() == 0) {
+            SharedPreferences.Editor editor = sharedPref.edit();
+            editor.putString("userID", uniqueID);
+            editor.commit();
+        }
+        Toast.makeText(getApplicationContext(), "sharedPref " + sharedPref.getString("userID", "sharedPref not found"), Toast.LENGTH_SHORT).show();
     }
 
     @Override
@@ -190,7 +202,23 @@ public class LoginActivity extends Activity implements
         mSocket.emit("add user", username);
     }
 
+    private void sendID() {
+        Toast.makeText(this, "sendID " + uniqueID, Toast.LENGTH_SHORT).show();
+        mSocket.emit("send id", uniqueID);
+    }
+
+    private void initializeRoomList(){
+        //Toast.makeText(this, "initializeRoomList()", Toast.LENGTH_SHORT).show();
+        refresher();
+    }
+
     private void createRoom() {
+
+        if (userLatitudeText == null)
+        {
+            Toast.makeText(this, "Location not found", Toast.LENGTH_LONG).show();
+            return;
+        }
         // Reset errors.
         mUsernameView.setError(null);
 
@@ -209,35 +237,42 @@ public class LoginActivity extends Activity implements
 
         mUsername = username;
 
-
-
+        TextView roomNameText = (TextView) findViewById(R.id.roomname_input);
         JSONObject chatRoomInfo = new JSONObject();
         try {
-            chatRoomInfo.put("roomName", (EditText) findViewById(R.id.roomname_input));
+            chatRoomInfo.put("roomName", roomNameText.getText().toString());
             chatRoomInfo.put("latitude", userLatitudeText);
             chatRoomInfo.put("longitude", userLongitudeText);
-            chatRoomInfo.put("uniqueID", uniqueID);
+            chatRoomInfo.put("nameID", uniqueID);
 
         } catch (JSONException e ){}
 
-        Toast.makeText(this, "createRoom() " + mUsername + " " + uniqueID, Toast.LENGTH_SHORT).show();
+        Toast.makeText(this, "createRoom() " + roomNameText.getText().toString() + " " + uniqueID, Toast.LENGTH_SHORT).show();
 
         // perform the user login attempt.
         mSocket.emit("create room", chatRoomInfo);
     }
 
+
     private void refresher(){
-        Toast.makeText(this, "refresher() ", Toast.LENGTH_SHORT).show();
+
+        if (userLatitudeText == null)
+        {
+            Toast.makeText(this, "Location not found", Toast.LENGTH_LONG).show();
+            return;
+        }
 
         JSONObject refreshInfo = new JSONObject();
         try {
+            //refreshInfo.put("nameID", uniqueID);
+            //refreshInfo.put("latitude", userLatitudeText);
+            //refreshInfo.put("longitude", userLongitudeText);
             refreshInfo.put("nameID", uniqueID);
-            refreshInfo.put("latitude", userLatitudeText);
-            refreshInfo.put("longitude", userLongitudeText);
-
+            refreshInfo.put("latitude", 35);
+            refreshInfo.put("longitude", 117);
         } catch (JSONException e ){}
-
-        mSocket.emit("display rooms", refreshInfo);
+        Toast.makeText(this, "refresher() " + refreshInfo, Toast.LENGTH_SHORT).show();
+        mSocket.emit("display local", refreshInfo);
     }
 
     private Emitter.Listener onLogin = new Emitter.Listener() {
@@ -281,10 +316,11 @@ public class LoginActivity extends Activity implements
         }
     };
 
-    private Emitter.Listener updateRoomList = new Emitter.Listener() {
+    private Emitter.Listener updateLocalRoomList = new Emitter.Listener() {
         @Override
         public void call(Object... args) {
             JSONObject data = (JSONObject) args[0];
+            Toast.makeText(getApplicationContext(), "get local received", Toast.LENGTH_SHORT).show();
 
 /*
             JSONArray roomArrays;
