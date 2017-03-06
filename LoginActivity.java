@@ -36,7 +36,10 @@ import android.widget.Toast;
 import android.widget.LinearLayout;
 import android.widget.LinearLayout.LayoutParams;
 import android.view.Gravity;
+
+import java.util.ArrayList;
 import java.util.Random;
+import android.util.Log;
 
 /**
  * A login screen that offers login via username.
@@ -52,15 +55,30 @@ public class LoginActivity extends Activity implements
 
     public static GoogleApiClient mGoogleApiClient;
     public static Location mLastLocation;
-    public String userLatitudeText;
-    public String userLongitudeText;
-
+    //public static String userCurrentRoom;
+    public static String userLatitudeText;
+    public static String userLongitudeText;
+    Context buttonContext;
+    LinearLayout ll;
     String uniqueID = MainActivity.uniqueID;
+    private ArrayList<String> listOfChatRooms = new ArrayList<String>();
+    private String globalCurrentRoom;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
+        ll = (LinearLayout) findViewById(R.id.room_box);
+        buttonContext = this;
+
+
+        if (userLatitudeText != null)
+        {
+            TextView tv = (TextView) findViewById(R.id.location_teller);
+            tv.setText("Your coordinates: " + userLatitudeText + ", " + userLongitudeText);
+            //tv.setText("Your location is ready!");
+        }
 
         if (mGoogleApiClient == null) {
             mGoogleApiClient = new GoogleApiClient.Builder(this)
@@ -119,14 +137,13 @@ public class LoginActivity extends Activity implements
 
         Random randomGenerator0 = new Random();
         int randomInt0 = randomGenerator0.nextInt(20);
-        randomInt0 = 1;
+        randomInt0 = 0;
         for (int i = 0; i < randomInt0; i++) {
             Random randomGenerator = new Random();
             int randomInt = randomGenerator.nextInt(10);
-            Button myButton = new Button(this);
+            Button myButton = new Button(buttonContext);
             myButton.setText("Pomona-" + randomInt);
-
-            LinearLayout ll = (LinearLayout) findViewById(R.id.room_box);
+            ll = (LinearLayout) findViewById(R.id.room_box);
             LayoutParams lp = new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT);
             myButton.setOnClickListener(new OnClickListener() {
                                     @Override
@@ -143,18 +160,17 @@ public class LoginActivity extends Activity implements
             LayoutParams lp = new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT);
             TextView padding = new TextView(this);
             TextView tv = new TextView(this);
-            tv.setText("( No rooms are near you...Search again! )");
+            tv.setText("( Click and find rooms near you! )");
             tv.setGravity(Gravity.CENTER);
             ll.addView(padding);
             ll.addView(tv);
-
         }
 
+        mSocket.on("get local", updateLocalRoomList);
         mSocket.on("login", onLogin);
-        mSocket.on("join", onJoin);
+        mSocket.on("join up", onJoinUp);
 
         //mSocket.on("display rooms", updateRoomList);
-        mSocket.on("get local", updateLocalRoomList);
 
 
         // device id maker
@@ -164,7 +180,9 @@ public class LoginActivity extends Activity implements
             editor.putString("userID", uniqueID);
             editor.commit();
         }
-        Toast.makeText(getApplicationContext(), "sharedPref " + sharedPref.getString("userID", "sharedPref not found"), Toast.LENGTH_SHORT).show();
+        uniqueID = sharedPref.getString("userID", "sharedPref not found");
+        Log.d("state", "sharedPref " + sharedPref.getString("userID", "sharedPref not found"));
+        //Toast.makeText(getApplicationContext(), "sharedPref " + sharedPref.getString("userID", "sharedPref not found"), Toast.LENGTH_SHORT).show();
     }
 
     @Override
@@ -202,21 +220,21 @@ public class LoginActivity extends Activity implements
         mSocket.emit("add user", username);
     }
 
-    private void sendID() {
-        Toast.makeText(this, "sendID " + uniqueID, Toast.LENGTH_SHORT).show();
-        mSocket.emit("send id", uniqueID);
-    }
-
-    private void initializeRoomList(){
-        //Toast.makeText(this, "initializeRoomList()", Toast.LENGTH_SHORT).show();
-        refresher();
+    private void joinRoom(String roomName) {
+        JSONObject joinRoomInfo = new JSONObject();
+        try {
+            joinRoomInfo.put("roomName", roomName);
+        } catch (JSONException e ){}
+        Log.d("state", "joinRoom() " + roomName);
+        // perform the user login attempt.
+        mSocket.emit("join room", joinRoomInfo);
     }
 
     private void createRoom() {
 
         if (userLatitudeText == null)
         {
-            Toast.makeText(this, "Location not found", Toast.LENGTH_LONG).show();
+            Toast.makeText(this, "Location not found", Toast.LENGTH_SHORT).show();
             return;
         }
         // Reset errors.
@@ -241,37 +259,69 @@ public class LoginActivity extends Activity implements
         JSONObject chatRoomInfo = new JSONObject();
         try {
             chatRoomInfo.put("roomName", roomNameText.getText().toString());
+            chatRoomInfo.put("nameID", uniqueID);
+            chatRoomInfo.put("username", mUsername);
             chatRoomInfo.put("latitude", userLatitudeText);
             chatRoomInfo.put("longitude", userLongitudeText);
-            chatRoomInfo.put("nameID", uniqueID);
-
         } catch (JSONException e ){}
 
-        Toast.makeText(this, "createRoom() " + roomNameText.getText().toString() + " " + uniqueID, Toast.LENGTH_SHORT).show();
-
+        //Toast.makeText(this, "createRoom() " + roomNameText.getText().toString() + " " + uniqueID, Toast.LENGTH_SHORT).show();
+        Log.d("state", "createRoom() " + roomNameText.getText().toString() + " " + uniqueID);
         // perform the user login attempt.
         mSocket.emit("create room", chatRoomInfo);
     }
 
+    private void addButtons(){
+        ll = (LinearLayout) findViewById(R.id.room_box);
+        ll.removeAllViews();
+
+        //handle if there are no rooms found
+        if (listOfChatRooms.size() == 0)
+        {
+            LinearLayout ll = (LinearLayout) findViewById(R.id.room_box);
+            LayoutParams lp = new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT);
+            TextView padding = new TextView(this);
+            TextView tv = new TextView(this);
+            tv.setText("( Click and find rooms near you! )");
+            tv.setGravity(Gravity.CENTER);
+            ll.addView(padding);
+            ll.addView(tv);
+            return;
+        }
+
+        for (int i = 0; i < listOfChatRooms.size(); i++) {
+            final int FinalI = i;
+            Button myButton = new Button(buttonContext);
+            globalCurrentRoom = listOfChatRooms.get(FinalI);
+            myButton.setText(globalCurrentRoom);
+            String thisCurrentRoom = globalCurrentRoom;
+            myButton.setOnClickListener(new OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    joinRoom(listOfChatRooms.get(FinalI));
+                }
+            });
+            ll.addView(myButton);
+        }
+    }
 
     private void refresher(){
 
         if (userLatitudeText == null)
         {
-            Toast.makeText(this, "Location not found", Toast.LENGTH_LONG).show();
+            Toast.makeText(this, "Location not found", Toast.LENGTH_SHORT).show();
             return;
         }
 
         JSONObject refreshInfo = new JSONObject();
         try {
-            //refreshInfo.put("nameID", uniqueID);
-            //refreshInfo.put("latitude", userLatitudeText);
-            //refreshInfo.put("longitude", userLongitudeText);
             refreshInfo.put("nameID", uniqueID);
-            refreshInfo.put("latitude", 35);
-            refreshInfo.put("longitude", 117);
+            refreshInfo.put("username", mUsername);
+            refreshInfo.put("latitude", userLatitudeText);
+            refreshInfo.put("longitude", userLongitudeText);
         } catch (JSONException e ){}
-        Toast.makeText(this, "refresher() " + refreshInfo, Toast.LENGTH_SHORT).show();
+        //Toast.makeText(this, "refresher() " + refreshInfo, Toast.LENGTH_SHORT).show();
+        Log.d("state", "refresher() " + refreshInfo);
         mSocket.emit("display local", refreshInfo);
     }
 
@@ -279,6 +329,7 @@ public class LoginActivity extends Activity implements
         @Override
         public void call(Object... args) {
             JSONObject data = (JSONObject) args[0];
+            Log.d("state", "emitter listener() onLogin " + data);
 
             int numUsers;
             try {
@@ -295,22 +346,30 @@ public class LoginActivity extends Activity implements
         }
     };
 
-    private Emitter.Listener onJoin = new Emitter.Listener() {
+    private Emitter.Listener onJoinUp = new Emitter.Listener() {
         @Override
         public void call(Object... args) {
             JSONObject data = (JSONObject) args[0];
+            Log.d("state", "emitter listener() onJoinUp " + data);
 
-            int numUsers;
-            //String
+            String username = mUsernameView.getText().toString().trim();
+            mUsername = username;
+            int numUsers = 0;
+            String userCurrentRoom = "a room";
+
             try {
-                numUsers = data.getInt("numUsers");
+                //numUsers = data.getInt("numUsers");
+                userCurrentRoom = data.getString("roomName");
             } catch (JSONException e) {
+                 Log.d("state", "join room problem " + userCurrentRoom);
                 return;
             }
+            Log.d("state", "deeeeebug " + userCurrentRoom);
 
             Intent intent = new Intent();
             intent.putExtra("username", mUsername);
             intent.putExtra("numUsers", numUsers);
+            intent.putExtra("currentRoom", userCurrentRoom);
             setResult(RESULT_OK, intent);
             finish();
         }
@@ -320,30 +379,32 @@ public class LoginActivity extends Activity implements
         @Override
         public void call(Object... args) {
             JSONObject data = (JSONObject) args[0];
-            Toast.makeText(getApplicationContext(), "get local received", Toast.LENGTH_SHORT).show();
+            Log.d("state", "updateLocalRoomList " + data);
 
-/*
-            JSONArray roomArrays;
+            JSONArray mJsonArray;
+            listOfChatRooms.clear();
             try {
-                roomArrays = data.getJSONArray("roomList");
-            } catch (JSONException e) {
-                return;
-            }
-
-            Intent intent = new Intent();
-            intent.putExtra("username", mUsername);
-            intent.putExtra("numUsers", numUsers);
-            setResult(RESULT_OK, intent);
-            finish();*/
+                mJsonArray = data.getJSONArray("roomName");
+                for (int i = 0; i < mJsonArray.length(); i++)
+                {
+                    String roomName = mJsonArray.get(i).toString();
+                    listOfChatRooms.add(roomName);
+                    Log.d("state", "updateLocalRoomList " + roomName);
+                }
+                }catch (JSONException e) {
+                    Log.d("state", "updateLocalRoomList error");
+                    return;
+                }
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            addButtons();
+                        }});
         }
     };
 
     @Override
     protected void onStart() {
-
-        //flag 0
-        //Toast.makeText(this, "login.onStart start", Toast.LENGTH_SHORT).show();
-
         super.onStart();
         if (mGoogleApiClient != null) {
             mGoogleApiClient.connect();
@@ -393,9 +454,14 @@ public class LoginActivity extends Activity implements
 
             TextView tv = (TextView) findViewById(R.id.location_teller);
             tv.setText("Your coordinates: " + userLatitudeText + ", " + userLongitudeText);
+            //tv.setText("Your location is ready!");
         }
     }
 
+    public void fillLocation(){
+        TextView tv = (TextView) findViewById(R.id.location_teller);
+        tv.setText("Your coordinates: " + userLatitudeText + ", " + userLongitudeText);
+    }
 
 
     /////// Debuggers

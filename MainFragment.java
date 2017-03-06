@@ -29,7 +29,7 @@ import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.List;
-
+import android.util.Log;
 
 /**
  * A chat fragment containing messages view and input form.
@@ -122,7 +122,9 @@ public class MainFragment extends Fragment {
         mInputMessageView.setOnEditorActionListener(new TextView.OnEditorActionListener() {
             @Override
             public boolean onEditorAction(TextView v, int id, KeyEvent event) {
+                //Log.d("state", "new messsage 00 " );
                 if (id == R.id.send || id == EditorInfo.IME_NULL) {
+                    Log.d("state", "new messsage 01 " );
                     attemptSend();
                     return true;
                 }
@@ -172,9 +174,12 @@ public class MainFragment extends Fragment {
 
         mUsername = data.getStringExtra("username");
         int numUsers = data.getIntExtra("numUsers", 1);
+        String currentRoom = data.getStringExtra("currentRoom");
 
         addLog(getResources().getString(R.string.message_welcome));
-        addParticipantsLog(numUsers);
+        addLog("You are " + mUsername);
+        addLog("You are in " + currentRoom);
+        //addParticipantsLog(numUsers);
     }
 
     @Override
@@ -235,8 +240,11 @@ public class MainFragment extends Fragment {
     }
 
     private void attemptSend() {
+        Log.d("state", "new messsage 01b - name check" );
         if (null == mUsername) return;
+        Log.d("state", "new messsage 02 - connection check" );
         if (!mSocket.connected()) return;
+        Log.d("state", "new messsage 03 - - connection check 2" );
 
         mTyping = false;
 
@@ -248,7 +256,7 @@ public class MainFragment extends Fragment {
 
         mInputMessageView.setText("");
         addMessage(mUsername, message);
-
+        Log.d("state", "new messsage " + message);
         // perform the sending message attempt.
         mSocket.emit("new message", message);
     }
@@ -260,9 +268,9 @@ public class MainFragment extends Fragment {
     }
 
     private void leave() {
-        mUsername = null;
-        mSocket.disconnect();
-        mSocket.connect();
+        //mUsername = null;
+        //mSocket.disconnect();
+        //mSocket.connect();
         startSignIn();
     }
 
@@ -356,7 +364,7 @@ public class MainFragment extends Fragment {
                     }
 
                     addLog(getResources().getString(R.string.message_user_joined, username));
-                    addParticipantsLog(numUsers);
+                    //addParticipantsLog(numUsers);
                 }
             });
         }
@@ -379,7 +387,7 @@ public class MainFragment extends Fragment {
                     }
 
                     addLog(getResources().getString(R.string.message_user_left, username));
-                    addParticipantsLog(numUsers);
+                    //addParticipantsLog(numUsers);
                     removeTyping(username);
                 }
             });
